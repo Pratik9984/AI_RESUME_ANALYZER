@@ -2,3 +2,7 @@ Flask
 pdfplumber
 python-docx
 openai  # or use requests for Ollama
+pip install gunicorn
+pip freeze > requirements.txt
+
+
