@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Resume Analyzer</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      padding: 40px;
+      max-width: 500px;
+      width: 100%;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .container::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+    }
+    .header { margin-bottom: 30px; }
+    .header h1 {
+      font-size: 2.2rem; font-weight: 700;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .header p { color: #718096; font-size: 1.1rem; line-height: 1.6; }
+    .upload-section { margin: 40px 0; }
+    .file-upload-wrapper { position: relative; display: inline-block; width: 100%; margin-bottom: 20px; }
+    .file-upload { position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+    .file-upload-label {
+      display: block; padding: 40px 20px; border: 3px dashed #cbd5e0;
+      border-radius: 15px; background: #f7fafc; cursor: pointer; transition: all 0.3s ease; position: relative;
+    }
+    .file-upload-label:hover { border-color: #667eea; background: #edf2f7; transform: translateY(-2px); }
+    .file-upload-label.dragover { border-color: #667eea; background: #e6fffa; }
+    .upload-icon { font-size: 3rem; color: #a0aec0; margin-bottom: 15px; transition: color 0.3s ease; }
+    .file-upload-label:hover .upload-icon { color: #667eea; }
+    .upload-text { color: #4a5568; font-size: 1.1rem; font-weight: 600; margin-bottom: 5px; }
+    .upload-subtext { color: #718096; font-size: 0.9rem; }
+    .file-info { display: none; background: #e6fffa; border: 1px solid #38b2ac; border-radius: 10px; padding: 15px; margin-top: 15px; color: #2c7a7b; }
+    .file-info.show { display: block; }
+    .submit-btn, .profile-btn {
+      border: none; padding: 15px 40px; border-radius: 50px; font-size: 1.1rem;
+      font-weight: 600; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(102,126,234,0.4);
+      width: 100%; margin-top: 20px; display: flex; justify-content: center; align-items: center;
+    }
+    .submit-btn { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+    .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(102,126,234,0.6); }
+    .submit-btn:disabled { background: #cbd5e0; cursor: not-allowed; transform: none; box-shadow: none; }
+    .profile-btn { background: #fff; color: #667eea; border: 2px solid #667eea; margin-top: 10px; text-decoration: none; text-align: center; }
+    .profile-btn:hover { background: #667eea; color: #fff; transform: translateY(-2px); }
+    .features { margin-top: 30px; padding-top: 30px; border-top: 1px solid #e2e8f0; }
+    .features h3 { color: #2d3748; font-size: 1.2rem; margin-bottom: 15px; }
+    .feature-list { display: flex; justify-content: space-around; flex-wrap: wrap; gap: 15px; }
+    .feature-item { display: flex; align-items: center; color: #4a5568; font-size: 0.9rem; }
+    .feature-icon { color: #38a169; margin-right: 8px; font-size: 1.1rem; }
+    .security-note { background: #f0fff4; border: 1px solid #9ae6b4; border-radius: 10px; padding: 15px; margin-top: 20px; color: #2f855a; font-size: 0.9rem; }
+    @media (max-width: 600px) {
+      .container { padding: 30px 20px; margin: 10px; }
+      .header h1 { font-size: 1.8rem; }
+      .file-upload-label { padding: 30px 15px; }
+      .feature-list { flex-direction: column; align-items: center; }
+    }
+    .bouncing-dots { display: inline-block; vertical-align: middle; margin-left: 10px; }
+    .bouncing-dots span { display: inline-block; width: 6px; height: 6px; margin: 0 2px; background-color: white; border-radius: 50%; animation: bounce 0.6s infinite alternate; }
+    .bouncing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .bouncing-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce { to { transform: translateY(-6px); opacity: 0.7; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>AI Resume Analyzer</h1>
+      <p>Get instant feedback and improve your resume with AI-powered insights</p>
+    </div>
+
+    <form action="/upload" method="POST" enctype="multipart/form-data">
+      <div class="upload-section">
+        <div class="file-upload-wrapper">
+          <input type="file" class="file-upload" id="resume" name="resume" accept=".pdf,.docx" required>
+          <label for="resume" class="file-upload-label">
+            <div class="upload-icon">📄</div>
+            <div class="upload-text">Drop your resume here</div>
+            <div class="upload-subtext">or click to browse (PDF, DOCX)</div>
+          </label>
+        </div>
+        <div class="file-info" id="fileInfo">
+          <strong>Selected file:</strong> <span id="fileName"></span>
+        </div>
+      </div>
+
+      <button type="submit" class="submit-btn" id="submitBtn">
+        <span id="btnText">Analyze My Resume</span>
+        <span class="bouncing-dots" id="loadingDots" style="display:none;"><span></span><span></span><span></span></span>
+      </button>
+
+      <!-- Profile Button -->
+      <a href="{{ url_for('profile') }}" class="profile-btn">👤 Go to Profile</a>
+    </form>
+
+    <div class="features">
+      <h3>What you'll get:</h3>
+      <div class="feature-list">
+        <div class="feature-item"><span class="feature-icon">✓</span><span>ATS Score</span></div>
+        <div class="feature-item"><span class="feature-icon">✓</span><span>Keyword Analysis</span></div>
+        <div class="feature-item"><span class="feature-icon">✓</span><span>Format Review</span></div>
+        <div class="feature-item"><span class="feature-icon">✓</span><span>Improvement Tips</span></div>
+      </div>
+    </div>
+
+    <div class="security-note">🔒 Your resume is processed securely and deleted after analysis</div>
+  </div>
+
+  <script>
+    const fileInput = document.getElementById('resume');
+    const fileInfo = document.getElementById('fileInfo');
+    const fileName = document.getElementById('fileName');
+    const uploadLabel = document.querySelector('.file-upload-label');
+    const submitBtn = document.getElementById('submitBtn');
+    const loadingDots = document.getElementById('loadingDots');
+    const btnText = document.getElementById('btnText');
+
+    fileInput.addEventListener('change', e => {
+      if (e.target.files.length > 0) {
+        fileName.textContent = e.target.files[0].name;
+        fileInfo.classList.add('show');
+        submitBtn.disabled = false;
+      }
+    });
+
+    uploadLabel.addEventListener('dragover', e => { e.preventDefault(); uploadLabel.classList.add('dragover'); });
+    uploadLabel.addEventListener('dragleave', e => { e.preventDefault(); uploadLabel.classList.remove('dragover'); });
+    uploadLabel.addEventListener('drop', e => {
+      e.preventDefault(); uploadLabel.classList.remove('dragover');
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        fileInput.files = files;
+        fileName.textContent = files[0].name;
+        fileInfo.classList.add('show');
+        submitBtn.disabled = false;
+      }
+    });
+
+    document.querySelector('form').addEventListener('submit', () => {
+      btnText.textContent = 'Analyzing';
+      loadingDots.style.display = 'inline-block';
+      submitBtn.disabled = true;
+    });
+  </script>
+</body>
+</html>

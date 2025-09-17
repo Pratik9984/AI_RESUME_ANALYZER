@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Resume Analysis Results - AI Resume Analyzer</title>
+  <style>
+    
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  padding: 2rem 1rem;
+}
+
+.container { max-width: 900px; margin: 0 auto; }
+
+.header { text-align: center; margin-bottom: 3rem; color: #fff; }
+.header h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem; text-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.header p { font-size: 1.1rem; opacity: 0.9; }
+
+.results-card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 3rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+}
+
+.score-section {
+  text-align: center;
+  margin-bottom: 3rem;
+  padding: 2rem;
+  border-radius: 15px;
+  border: 1px solid #e1e8f0;
+  background: linear-gradient(135deg, #f8f9ff 0%, #e8f2ff 100%);
+}
+
+.score-display { display: inline-block; margin-bottom: 1rem; }
+
+.score-circle {
+  width: 150px; height: 150px; margin: 0 auto;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.score-inner {
+  width: 120px; height: 120px;
+  background: #fff;
+  border-radius: 50%;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.score-number { font-size: 2.5rem; font-weight: 800; color: #2c3e50; }
+.score-label { font-size: 0.9rem; font-weight: 600; color: #7f8c8d; text-transform: uppercase; letter-spacing: 1px; }
+.score-description { margin-top: 1rem; font-size: 1.1rem; color: #5a6c7d; }
+
+.feedback-section { margin-bottom: 2rem; }
+.section-title {
+  font-size: 1.5rem; font-weight: 700; color: #2c3e50;
+  margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;
+}
+.section-title::before { content: "💡"; font-size: 1.2rem; }
+
+.feedback-content {
+  background: #f8f9fa;
+  padding: 1.5rem 2rem;
+  border-radius: 12px;
+  border-left: 4px solid #667eea;
+  font-size: 1.1rem; line-height: 1.7; color: #495057;
+}
+.feedback-content ul { padding-left: 1.5rem; margin-bottom: 1rem; }
+.feedback-content li { margin-bottom: 0.5rem; }
+
+.tips-section {
+  margin-top: 2rem; padding: 2rem; border-radius: 12px;
+  border: 1px solid #feb2b2;
+  background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
+}
+.tips-title {
+  font-size: 1.3rem; font-weight: 700; color: #c53030;
+  margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;
+}
+.tips-title::before { content: "🎯"; font-size: 1.2rem; }
+.tips-list { list-style: none; padding: 0; }
+.tips-list li { padding: 0.5rem 0; color: #742a2a; font-weight: 500; }
+.tips-list li::before { content: "✓"; color: #38a169; font-weight: bold; margin-right: 0.5rem; }
+
+.action-buttons {
+  margin-top: 2rem; display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center;
+}
+.btn {
+  padding: 1rem 2rem; border-radius: 50px;
+  font-size: 1.1rem; font-weight: 600;
+  text-decoration: none; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  transition: all 0.3s ease;
+}
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(102,126,234,0.4);
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(102,126,234,0.6);
+}
+.btn-secondary {
+  background: #fff; color: #667eea; border: 2px solid #667eea;
+}
+.btn-secondary:hover {
+  background: #667eea; color: #fff; transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+  .results-card { padding: 2rem 1.5rem; }
+  .header h1 { font-size: 2rem; }
+  .score-circle { width: 120px; height: 120px; }
+  .score-inner { width: 95px; height: 95px; }
+  .score-number { font-size: 2rem; }
+  .action-buttons { flex-direction: column; align-items: center; }
+  .btn { width: 100%; max-width: 300px; justify-content: center; }
+}
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Resume Analysis Complete</h1>
+      <p>Here's your comprehensive resume evaluation</p>
+    </div>
+
+    <div class="results-card">
+      {% set score_deg = (score if score is number else 0) * 3.6 %}
+
+      {% if score is string and score.startswith("Only Resume") %}
+        <div class="score-section">
+          <div class="score-description">
+            <strong>{{ score }}</strong>
+          </div>
+        </div>
+
+      {% elif score is string and score.startswith("Error") %}
+        <div class="score-section">
+          <div class="score-description">
+            <strong>{{ score }}</strong>
+          </div>
+        </div>
+
+      {% else %}
+        <!-- SCORE -->
+        <div class="score-section">
+          <div class="score-display">
+            <div class="score-circle" style="background: conic-gradient(
+              from 0deg,
+              #4CAF50 0deg,
+              #4CAF50 {{ score_deg }}deg,
+              #e0e0e0 {{ score_deg }}deg 360deg
+            );">
+              <div class="score-inner">
+                <div class="score-number">{{ score }}</div>
+                <div class="score-label">Score</div>
+              </div>
+            </div>
+          </div>
+          <div class="score-description">
+            <strong>
+              {% if score >= 80 %}
+                Excellent! Your resume is well-optimized.
+              {% elif score >= 60 %}
+                Good job! Some improvements can boost your score.
+              {% elif score >= 40 %}
+                Fair. Several areas need attention.
+              {% else %}
+                Needs work. Focus on key improvements.
+              {% endif %}
+            </strong>
+          </div>
+        </div>
+
+        <!-- FEEDBACK -->
+        <div class="feedback-section">
+          <h3 class="section-title">Detailed Analysis</h3>
+          <div class="feedback-content">
+            {% for section, points in feedback.items() %}
+              <h4 style="margin-top: 1rem; color:#2c3e50;">{{ section }}</h4>
+              {% if points %}
+                <ul>
+                  {% for pt in points %}
+                    <li>{{ pt }}</li>
+                  {% endfor %}
+                </ul>
+              {% else %}
+                <p>No feedback provided.</p>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- TIPS -->
+        <div class="tips-section">
+          <h4 class="tips-title">Quick Improvement Tips</h4>
+          <ul class="tips-list">
+            <li>Use action verbs to start bullet points</li>
+            <li>Quantify achievements with specific numbers</li>
+            <li>Tailor keywords to match job descriptions</li>
+            <li>Keep formatting clean and consistent</li>
+            <li>Include relevant technical skills</li>
+          </ul>
+        </div>
+      {% endif %}
+
+      <!-- ACTION BUTTONS -->
+      <div class="action-buttons">
+        <a href="{{ url_for('index') }}" class="btn btn-primary">📄 Analyze Another Resume</a>
+        <a href="{{ url_for('profile') }}" class="btn btn-primary">👤 Go to Profile</a>
+        <a href="#" class="btn btn-secondary" onclick="window.print()">🖨️ Print Results</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User Profile - AI Resume Analyzer</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    .container { max-width: 900px; margin: 0 auto; }
+
+    .header { text-align: center; margin-bottom: 3rem; color: #fff; }
+    .header h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem; text-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .header p { font-size: 1.1rem; opacity: 0.9; }
+
+    .profile-card {
+      background: #fff;
+      border-radius: 20px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      display: flex; align-items: center; gap: 1.5rem;
+    }
+
+    .profile-pic {
+      width: 100px; height: 100px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid #667eea;
+    }
+
+    .profile-info h2 { font-size: 1.8rem; color: #2c3e50; margin-bottom: 0.3rem; }
+    .profile-info p { font-size: 1rem; color: #718096; }
+
+    .resume-history {
+      margin-top: 2rem;
+    }
+
+    .history-card {
+      background: #f8f9fa;
+      padding: 1.5rem 2rem;
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      border-left: 4px solid #667eea;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+
+    .history-card h4 { margin-bottom: 0.5rem; color: #2c3e50; }
+    .history-card .score { font-weight: 700; color: #38a169; }
+    .history-card ul { padding-left: 1.5rem; margin-top: 0.5rem; }
+    .history-card li { margin-bottom: 0.3rem; }
+
+    .action-buttons {
+      margin-top: 2rem; display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center;
+    }
+
+    .btn {
+      padding: 0.8rem 1.5rem; border-radius: 50px;
+      font-size: 1rem; font-weight: 600;
+      text-decoration: none; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(102,126,234,0.4);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(102,126,234,0.6); }
+
+    .btn-secondary {
+      background: #fff; color: #667eea; border: 2px solid #667eea;
+    }
+    .btn-secondary:hover { background: #667eea; color: #fff; transform: translateY(-2px); }
+
+    @media (max-width: 768px) {
+      .profile-card { flex-direction: column; align-items: center; text-align: center; }
+      .action-buttons { flex-direction: column; align-items: center; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- HEADER -->
+    <div class="header">
+      <h1>Welcome, {{ username }}</h1>
+      <p>Your resume history and analysis results</p>
+    </div>
+    <div class="action-buttons">
+      <a href="{{ url_for('index') }}" class="btn btn-primary">📄 Upload New Resume</a>
+      <a href="{{ url_for('logout') }}" class="btn btn-secondary">🚪 Logout</a>
+    </div>
+
+    <!-- PROFILE INFO -->
+    <div class="profile-card">
+      
+      <div class="profile-info">
+        <h2>{{ username }}</h2>
+        
+        
+      </div>
+    </div>
+
+    <!-- RESUME HISTORY -->
+    <div class="resume-history">
+      {% for resume in resumes %}
+        <div class="history-card">
+          <h4>{{ resume.filename }} - <span class="score">{{ resume.score }}%</span></h4>
+          <p><strong>Uploaded on:</strong> {{ resume.timestamp }}</p>
+          <div>
+            <strong>Feedback:</strong>
+            <ul>
+              {% for section, points in resume.feedback.items() %}
+                {% for pt in points %}
+                  <li>{{ pt }}</li>
+                {% endfor %}
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      {% else %}
+        <p style="text-align:center; color:#495057;">No resumes uploaded yet.</p>
+      {% endfor %}
+    </div>
+
+    <!-- ACTION BUTTONS -->
+   
+  </div>
+</body>
+</html>
