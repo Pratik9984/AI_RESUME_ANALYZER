@@ -3,164 +3,339 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Resume Analyzer</title>
+  <title>Upload Resume — AI Resume Analyzer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Nunito:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #f0f4f8;
+      --surface: #ffffff;
+      --border: #dde3ed;
+      --text: #0f172a;
+      --muted: #64748b;
+      --primary: #1a56db;
+      --primary-hover: #1449b0;
+      --primary-light: #eff6ff;
+      --success: #059669;
+      --success-light: #ecfdf5;
+      --radius: 14px;
+      --shadow: 0 4px 24px rgba(15,23,42,0.08);
+    }
+
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      font-family: 'Nunito', sans-serif;
+      background: var(--bg);
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 20px;
+      padding: 24px;
     }
-    .container {
-      background: white;
-      border-radius: 20px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-      padding: 40px;
-      max-width: 500px;
+
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
       width: 100%;
-      text-align: center;
-      position: relative;
+      max-width: 500px;
       overflow: hidden;
     }
-    .container::before {
-      content: '';
+
+    .card-header {
+      background: #0f172a;
+      padding: 32px 36px 28px;
+      text-align: center;
+    }
+
+    .card-header .logo-icon { font-size: 2.2rem; display: block; margin-bottom: 10px; }
+
+    .card-header h1 {
+      font-family: 'Syne', sans-serif;
+      color: #ffffff;
+      font-size: 1.7rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .card-header p { color: #94a3b8; font-size: 0.9rem; margin-top: 6px; line-height: 1.5; }
+
+    .card-body { padding: 32px 36px; }
+
+    /* Flash messages */
+    .alert {
+      padding: 11px 14px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .alert-error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+
+    /* Upload zone */
+    .upload-zone {
+      position: relative;
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      background: #f8fafc;
+      padding: 40px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s, transform 0.15s;
+      margin-bottom: 16px;
+    }
+
+    .upload-zone:hover,
+    .upload-zone.drag-over {
+      border-color: var(--primary);
+      background: var(--primary-light);
+      transform: translateY(-2px);
+    }
+
+    .upload-zone input[type="file"] {
       position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 4px;
-      background: linear-gradient(90deg, #667eea, #764ba2);
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
     }
-    .header { margin-bottom: 30px; }
-    .header h1 {
-      font-size: 2.2rem; font-weight: 700;
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+
+    .upload-icon { font-size: 2.8rem; display: block; margin-bottom: 12px; }
+    .upload-title { font-weight: 700; font-size: 1rem; color: var(--text); margin-bottom: 4px; }
+    .upload-sub { color: var(--muted); font-size: 0.875rem; }
+
+    /* File info */
+    .file-selected {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      background: var(--success-light);
+      border: 1px solid #6ee7b7;
+      border-radius: 10px;
+      color: var(--success);
+      font-weight: 600;
+      font-size: 0.875rem;
+      margin-bottom: 16px;
     }
-    .header p { color: #718096; font-size: 1.1rem; line-height: 1.6; }
-    .upload-section { margin: 40px 0; }
-    .file-upload-wrapper { position: relative; display: inline-block; width: 100%; margin-bottom: 20px; }
-    .file-upload { position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
-    .file-upload-label {
-      display: block; padding: 40px 20px; border: 3px dashed #cbd5e0;
-      border-radius: 15px; background: #f7fafc; cursor: pointer; transition: all 0.3s ease; position: relative;
+    .file-selected.show { display: flex; }
+    .file-selected .file-name { 
+      flex: 1; 
+      overflow: hidden; 
+      text-overflow: ellipsis; 
+      white-space: nowrap; 
     }
-    .file-upload-label:hover { border-color: #667eea; background: #edf2f7; transform: translateY(-2px); }
-    .file-upload-label.dragover { border-color: #667eea; background: #e6fffa; }
-    .upload-icon { font-size: 3rem; color: #a0aec0; margin-bottom: 15px; transition: color 0.3s ease; }
-    .file-upload-label:hover .upload-icon { color: #667eea; }
-    .upload-text { color: #4a5568; font-size: 1.1rem; font-weight: 600; margin-bottom: 5px; }
-    .upload-subtext { color: #718096; font-size: 0.9rem; }
-    .file-info { display: none; background: #e6fffa; border: 1px solid #38b2ac; border-radius: 10px; padding: 15px; margin-top: 15px; color: #2c7a7b; }
-    .file-info.show { display: block; }
-    .submit-btn, .profile-btn {
-      border: none; padding: 15px 40px; border-radius: 50px; font-size: 1.1rem;
-      font-weight: 600; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(102,126,234,0.4);
-      width: 100%; margin-top: 20px; display: flex; justify-content: center; align-items: center;
+
+    /* Buttons */
+    .btn {
+      width: 100%;
+      padding: 13px;
+      border: none;
+      border-radius: 10px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-decoration: none;
+      margin-bottom: 10px;
     }
-    .submit-btn { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
-    .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(102,126,234,0.6); }
-    .submit-btn:disabled { background: #cbd5e0; cursor: not-allowed; transform: none; box-shadow: none; }
-    .profile-btn { background: #fff; color: #667eea; border: 2px solid #667eea; margin-top: 10px; text-decoration: none; text-align: center; }
-    .profile-btn:hover { background: #667eea; color: #fff; transform: translateY(-2px); }
-    .features { margin-top: 30px; padding-top: 30px; border-top: 1px solid #e2e8f0; }
-    .features h3 { color: #2d3748; font-size: 1.2rem; margin-bottom: 15px; }
-    .feature-list { display: flex; justify-content: space-around; flex-wrap: wrap; gap: 15px; }
-    .feature-item { display: flex; align-items: center; color: #4a5568; font-size: 0.9rem; }
-    .feature-icon { color: #38a169; margin-right: 8px; font-size: 1.1rem; }
-    .security-note { background: #f0fff4; border: 1px solid #9ae6b4; border-radius: 10px; padding: 15px; margin-top: 20px; color: #2f855a; font-size: 0.9rem; }
-    @media (max-width: 600px) {
-      .container { padding: 30px 20px; margin: 10px; }
-      .header h1 { font-size: 1.8rem; }
-      .file-upload-label { padding: 30px 15px; }
-      .feature-list { flex-direction: column; align-items: center; }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
     }
-    .bouncing-dots { display: inline-block; vertical-align: middle; margin-left: 10px; }
-    .bouncing-dots span { display: inline-block; width: 6px; height: 6px; margin: 0 2px; background-color: white; border-radius: 50%; animation: bounce 0.6s infinite alternate; }
-    .bouncing-dots span:nth-child(2) { animation-delay: 0.2s; }
-    .bouncing-dots span:nth-child(3) { animation-delay: 0.4s; }
-    @keyframes bounce { to { transform: translateY(-6px); opacity: 0.7; } }
+    .btn-primary:hover:not(:disabled) {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(26, 86, 219, 0.25);
+    }
+    .btn-primary:disabled {
+      background: #cbd5e1;
+      color: #94a3b8;
+      cursor: not-allowed;
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--primary);
+      border: 2px solid var(--border);
+    }
+    .btn-outline:hover {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+
+    /* Features */
+    .features {
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+    }
+
+    .features h3 {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 14px;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.875rem;
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .feature-dot {
+      width: 8px; height: 8px;
+      background: var(--primary);
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* Loading dots */
+    .dots { display: inline-flex; gap: 4px; align-items: center; }
+    .dots span {
+      width: 6px; height: 6px;
+      background: white;
+      border-radius: 50%;
+      animation: bounce 0.6s infinite alternate;
+    }
+    .dots span:nth-child(2) { animation-delay: 0.2s; }
+    .dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce { to { transform: translateY(-5px); opacity: 0.6; } }
+
+    @media (max-width: 480px) {
+      .card-body { padding: 24px 20px; }
+      .card-header { padding: 28px 20px 24px; }
+      .feature-grid { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
+  <div class="card">
+    <div class="card-header">
+      <span class="logo-icon">📋</span>
       <h1>AI Resume Analyzer</h1>
-      <p>Get instant feedback and improve your resume with AI-powered insights</p>
+      <p>Upload your resume and get instant AI-powered feedback</p>
     </div>
 
-    <form action="/upload" method="POST" enctype="multipart/form-data">
-      <div class="upload-section">
-        <div class="file-upload-wrapper">
-          <input type="file" class="file-upload" id="resume" name="resume" accept=".pdf,.docx" required>
-          <label for="resume" class="file-upload-label">
-            <div class="upload-icon">📄</div>
-            <div class="upload-text">Drop your resume here</div>
-            <div class="upload-subtext">or click to browse (PDF, DOCX)</div>
-          </label>
+    <div class="card-body">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">⚠️ {{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form action="{{ url_for('upload') }}" method="POST" enctype="multipart/form-data" id="uploadForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="upload-zone" id="uploadZone">
+          <input type="file" id="resume" name="resume" accept=".pdf,.docx" required>
+          <span class="upload-icon">📄</span>
+          <div class="upload-title">Drop your resume here</div>
+          <div class="upload-sub">or click to browse · PDF or DOCX</div>
         </div>
-        <div class="file-info" id="fileInfo">
-          <strong>Selected file:</strong> <span id="fileName"></span>
+
+        <div class="file-selected" id="fileSelected">
+          <span>✅</span>
+          <span class="file-name" id="fileName"></span>
         </div>
-      </div>
 
-      <button type="submit" class="submit-btn" id="submitBtn">
-        <span id="btnText">Analyze My Resume</span>
-        <span class="bouncing-dots" id="loadingDots" style="display:none;"><span></span><span></span><span></span></span>
-      </button>
+        <button type="submit" class="btn btn-primary" id="submitBtn" disabled>
+          <span id="btnText">Analyze My Resume</span>
+          <span class="dots" id="loadingDots" style="display:none;">
+            <span></span><span></span><span></span>
+          </span>
+        </button>
 
-      <!-- Profile Button -->
-      <a href="{{ url_for('profile') }}" class="profile-btn">👤 Go to Profile</a>
-    </form>
+        <a href="{{ url_for('profile') }}" class="btn btn-outline">👤 My Profile</a>
+      </form>
 
-    <div class="features">
-      <h3>What you'll get:</h3>
-      <div class="feature-list">
-        <div class="feature-item"><span class="feature-icon">✓</span><span>ATS Score</span></div>
-        <div class="feature-item"><span class="feature-icon">✓</span><span>Keyword Analysis</span></div>
-        <div class="feature-item"><span class="feature-icon">✓</span><span>Format Review</span></div>
-        <div class="feature-item"><span class="feature-icon">✓</span><span>Improvement Tips</span></div>
+      <div class="features">
+        <h3>What you'll receive</h3>
+        <div class="feature-grid">
+          <div class="feature-item"><span class="feature-dot"></span> ATS Score</div>
+          <div class="feature-item"><span class="feature-dot"></span> Keyword Analysis</div>
+          <div class="feature-item"><span class="feature-dot"></span> Format Review</div>
+          <div class="feature-item"><span class="feature-dot"></span> Improvement Tips</div>
+        </div>
       </div>
     </div>
-
-    <div class="security-note">🔒 Your resume is processed securely and deleted after analysis</div>
   </div>
 
   <script>
-    const fileInput = document.getElementById('resume');
-    const fileInfo = document.getElementById('fileInfo');
-    const fileName = document.getElementById('fileName');
-    const uploadLabel = document.querySelector('.file-upload-label');
-    const submitBtn = document.getElementById('submitBtn');
+    const fileInput   = document.getElementById('resume');
+    const fileSelected = document.getElementById('fileSelected');
+    const fileName    = document.getElementById('fileName');
+    const uploadZone  = document.getElementById('uploadZone');
+    const submitBtn   = document.getElementById('submitBtn');
+    const btnText     = document.getElementById('btnText');
     const loadingDots = document.getElementById('loadingDots');
-    const btnText = document.getElementById('btnText');
+
+    function onFileChosen(file) {
+      if (!file) return;
+      fileName.textContent = file.name;
+      fileSelected.classList.add('show');
+      submitBtn.disabled = false;
+    }
 
     fileInput.addEventListener('change', e => {
-      if (e.target.files.length > 0) {
-        fileName.textContent = e.target.files[0].name;
-        fileInfo.classList.add('show');
-        submitBtn.disabled = false;
-      }
+      if (e.target.files.length > 0) onFileChosen(e.target.files[0]);
     });
 
-    uploadLabel.addEventListener('dragover', e => { e.preventDefault(); uploadLabel.classList.add('dragover'); });
-    uploadLabel.addEventListener('dragleave', e => { e.preventDefault(); uploadLabel.classList.remove('dragover'); });
-    uploadLabel.addEventListener('drop', e => {
-      e.preventDefault(); uploadLabel.classList.remove('dragover');
+    uploadZone.addEventListener('dragover', e => {
+      e.preventDefault();
+      uploadZone.classList.add('drag-over');
+    });
+
+    uploadZone.addEventListener('dragleave', () => {
+      uploadZone.classList.remove('drag-over');
+    });
+
+    uploadZone.addEventListener('drop', e => {
+      e.preventDefault();
+      uploadZone.classList.remove('drag-over');
       const files = e.dataTransfer.files;
       if (files.length > 0) {
-        fileInput.files = files;
-        fileName.textContent = files[0].name;
-        fileInfo.classList.add('show');
-        submitBtn.disabled = false;
+        // Use DataTransfer to set files on the input (widely supported)
+        try {
+          const dt = new DataTransfer();
+          dt.items.add(files[0]);
+          fileInput.files = dt.files;
+        } catch (_) {
+          // Fallback: just show the name; server will handle the actual file
+        }
+        onFileChosen(files[0]);
       }
     });
 
-    document.querySelector('form').addEventListener('submit', () => {
+    document.getElementById('uploadForm').addEventListener('submit', () => {
       btnText.textContent = 'Analyzing';
-      loadingDots.style.display = 'inline-block';
+      loadingDots.style.display = 'inline-flex';
       submitBtn.disabled = true;
     });
   </script>
