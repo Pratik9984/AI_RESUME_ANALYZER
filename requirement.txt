@@ -3,3 +3,5 @@ requests
 pdfplumber
 python-docx
 Werkzeug
+python-dotenv
+gunicorn
