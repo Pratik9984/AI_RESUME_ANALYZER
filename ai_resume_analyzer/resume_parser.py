@@ -1,25 +1,29 @@
 import pdfplumber
-import docx
+from docx import Document
 
 def extract_text(filepath):
-    """Extracts text from PDF or DOCX files. Returns plain text or error message."""
+    """
+    Extracts plain text from a PDF or DOCX file.
+    Returns extracted text, or a descriptive error string.
+    """
     try:
         if filepath.lower().endswith('.pdf'):
             with pdfplumber.open(filepath) as pdf:
-                text = []
-                for page in pdf.pages:
-                    page_text = page.extract_text()
-                    if page_text:
-                        text.append(page_text)
-                return "\n".join(text) if text else "No extractable text found in PDF."
-        
+                pages = [page.extract_text() for page in pdf.pages if page.extract_text()]
+                if not pages:
+                    return (
+                        "No extractable text found in this PDF. "
+                        "It may be a scanned document. Please use a text-based PDF or a DOCX file."
+                    )
+                return "\n".join(pages)
+
         elif filepath.lower().endswith('.docx'):
-            doc = docx.Document(filepath)
-            paragraphs = [para.text.strip() for para in doc.paragraphs if para.text.strip()]
+            doc = Document(filepath)
+            paragraphs = [p.text.strip() for p in doc.paragraphs if p.text.strip()]
             return "\n".join(paragraphs) if paragraphs else "No extractable text found in DOCX."
-        
+
         else:
-            return "Unsupported file format. Only PDF and DOCX are allowed."
+            return "Unsupported file format. Only PDF and DOCX files are accepted."
 
     except Exception as e:
         return f"Error extracting text: {str(e)}"
