@@ -1,86 +1,102 @@
+import os
 import requests
-import re
+import json
+from dotenv import load_dotenv
+
+# This physically loads the variables from your .env file into the script
+load_dotenv()
 
 def is_valid_resume(text):
-    """Basic heuristic to detect resume-like content"""
-    resume_keywords = ["experience", "education", "skills", "summary", "projects", "certifications"]
-    matches = sum(1 for kw in resume_keywords if kw.lower() in text.lower())
-    return matches >= 2  # Adjust threshold as needed
+    """Heuristic check: resume-like content has multiple resume keywords and reasonable length."""
+    if len(text.strip()) < 100:
+        return False
+    keywords = [
+        "experience", "education", "skills", "summary", "projects",
+        "certifications", "work history", "employment", "objective", "references"
+    ]
+    matches = sum(1 for kw in keywords if kw.lower() in text.lower())
+    return matches >= 2
 
-def extract_sections(content):
-    """Improved section extraction using header positions"""
-    section_headers = ["Strengths", "Weaknesses", "Formatting Issues", "Suggestions"]
-    feedback_dict = {}
 
-    content_lower = content.lower()
-    positions = {header: content_lower.find(header.lower()) for header in section_headers}
-    sorted_headers = sorted(positions.items(), key=lambda x: x[1] if x[1] != -1 else float('inf'))
+def analyze_resume(text, api_key=None):
+    """
+    Analyzes resume text via Groq API.
+    Requests structured JSON output natively.
+    Returns (score: int, feedback_dict: dict).
+    """
+    # Now it will successfully pull the key from your .env file
+    # It checks for both uppercase and your original casing just in case
+    key = api_key or os.environ.get("GROQ_API_KEY") or os.environ.get("Groq_API_KEY")
+    
+    if not key:
+        return 0, {"Error": ["Groq API key not found. Make sure your .env file is set up correctly."]}
 
-    for i, (header, start) in enumerate(sorted_headers):
-        if start == -1:
-            feedback_dict[header] = []
-            continue
-        end = sorted_headers[i + 1][1] if i + 1 < len(sorted_headers) else len(content)
-        section_text = content[start:end].splitlines()
-        points = [line.strip("-*• ").strip() for line in section_text if line.strip()]
-        feedback_dict[header] = points
-
-    return feedback_dict
-
-def analyze_resume(text):
-    """Main resume analysis function"""
     if not is_valid_resume(text):
-        return "Only Resume and CV are allowed to review", {}
+        return 0, {"Notice": ["Only Resume and CV documents are accepted for review."]}
 
-    prompt = f"""
-You're a professional resume reviewer. Analyze the following resume and return in clearly labeled sections:
-- Score out of 100 (based on relevance, formatting, keyword density, grammar)
-- Strengths (bullet points)
-- Weaknesses (bullet points)
-- Formatting Issues (bullet points)
-- Suggestions to improve clarity and keyword relevance (bullet points)
-- Review only the resume and CV. If another document is provided, say "Only Resume and CV are allowed to review."
+    prompt = f"""You are a professional resume reviewer , Review the Resume very strictly. Analyze the resume below and respond ONLY with a valid JSON object. No preamble, no explanation.
+
+Required JSON structure (all fields required, values must be arrays of strings):
+{{
+  "score": <integer 0-100>,
+  "strengths": ["...", "..."],
+  "weaknesses": ["...", "..."],
+  "formatting_issues": ["...", "..."],
+  "suggestions": ["...", "..."]
+}}
 
 Resume:
-{text}
-"""
+{text}"""
+
+    headers = {
+        "Authorization": f"Bearer {key}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": "llama-3.1-8b-instant", 
+        "messages": [
+            {
+                "role": "system",
+                "content": "You are an API that only returns valid JSON objects."
+            },
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        "temperature": 0,
+        "response_format": {"type": "json_object"} 
+    }
 
     try:
         response = requests.post(
-            "http://localhost:11434/api/generate",
-            json={
-                "model": "mistral",
-                "prompt": prompt,
-                "stream": False,
-                "options": {"temperature": 0}
-            }
+            "https://api.groq.com/openai/v1/chat/completions",
+            headers=headers,
+            json=payload,
+            timeout=120
         )
-        result = response.json()
-        content = result.get("response", "No response received.")
+        response.raise_for_status()
+        
+        raw = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+        parsed = json.loads(raw)
 
-        # Extract numeric score
-        score_match = re.search(r"(\d{1,3})\s*/?\s*100", content)
-        score = int(score_match.group(1)) if score_match else 0
-
-        # Extract feedback sections
-        feedback_dict = extract_sections(content)
-
+        score = max(0, min(100, int(parsed.get("score", 0))))
+        feedback_dict = {
+            "Strengths":         parsed.get("strengths", []),
+            "Weaknesses":        parsed.get("weaknesses", []),
+            "Formatting Issues": parsed.get("formatting_issues", []),
+            "Suggestions":       parsed.get("suggestions", [])
+        }
         return score, feedback_dict
 
+    except json.JSONDecodeError:
+        return 0, {"Error": ["The AI returned an unexpected format. Please try again."]}
+    except requests.exceptions.HTTPError as e:
+        return 0, {"Error": [f"API Error: {response.status_code} - {response.text}"]}
+    except requests.exceptions.ConnectionError:
+        return 0, {"Error": ["Could not reach the Groq API. Please check your internet connection."]}
+    except requests.exceptions.Timeout:
+        return 0, {"Error": ["The analysis request timed out. Please try again."]}
     except Exception as e:
-        return f"Error during resume analysis: {str(e)}", {}
-
-# 🧪 Example usage
-if __name__ == "__main__":
-    sample_text = "This is a sample document about quarterly sales and marketing strategy. No resume content here."
-
-    score, feedback = analyze_resume(sample_text)
-
-    if isinstance(score, str) and score.startswith("Only Resume"):
-        print(score)
-    else:
-        print(f"Score: {score}")
-        for section, points in feedback.items():
-            print(f"\n{section}:")
-            for point in points:
-                print(f"- {point}")
+        return 0, {"Error": [f"Analysis failed: {str(e)}"]}
