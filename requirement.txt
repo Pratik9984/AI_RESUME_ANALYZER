@@ -1,5 +1,5 @@
-flask
-gunicorn
+Flask
 requests
 pdfplumber
 python-docx
+Werkzeug
